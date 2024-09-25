@@ -25,11 +25,11 @@ router.get('/', async (req, res) => {
       let month = 7;
       let year = 2024;
       let StockTake_Month = month - 1;
-    
+
       const get = {
-         StockTake_Month : StockTake_Month,
-         month :month,
-         year :year
+         StockTake_Month: StockTake_Month,
+         month: month,
+         year: year
       }
       const q = `
        SELECT i.Material_ID, i.PackUnit, i.Qty_In, i.DateCreated,   i.RowNum
@@ -81,9 +81,9 @@ router.get('/', async (req, res) => {
          };
          unitPrice.push(newData);
       }
-  
-      const q3 =`
-      select b.* from (
+
+      const qBeginningStock = `
+      select b.* , 'BeginningStock' as 'field' from (
          select a.Material_ID, sum(a.TotalPack_Qty_InHand)  as 'beginningStock',   a.PackUnit
          from 
          ( 
@@ -98,12 +98,17 @@ router.get('/', async (req, res) => {
          group by a.Material_ID,   a.PackUnit
          ) as b where b.beginningStock > 0;
       `;
-      const beginningStock = await runQuery(q3); 
+      const beginningStock = await runQuery(qBeginningStock);
+      // const beginningStockObj = beginningStock.reduce((acc, material) => {
+      //    const { Material_ID, ...rest } = material;
+      //    acc[Material_ID] = rest;
+      //    return acc;
+      // }, {});
 
 
 
-      const qIn = `
-      SELECT a.Material_ID,  sum(a.materialTotalAmount) as 'materialTotalAmount', a.PackUnit from (
+      const qInStock = `
+      SELECT a.Material_ID,  sum(a.materialTotalAmount) as 'materialTotalAmount', a.PackUnit, 'InStock' as 'field' from (
 
       SELECT  d.Material_ID, d.PackUnit,
          sum(d.MaterialTotalAmount) as 'materialTotalAmount' , 'MR_GRN' as 'table'
@@ -124,8 +129,7 @@ router.get('/', async (req, res) => {
 
          ) as a group by a.Material_ID, a.PackUnit
       `;
-
-      const inStock = await runQuery(qIn); 
+      const inStock = await runQuery(qInStock);
 
 
 
@@ -145,40 +149,86 @@ router.get('/', async (req, res) => {
          ) as b 
       where b.subTotal > 0  
       `;
-       
-      const endingStock = await runQuery(qEndingStock); 
-       
-      const unitPriceObj = unitPrice.reduce((acc, material) => {
-         const { Material_ID, ...rest } = material;
-         acc[Material_ID] = rest;
-         return acc;
-       }, {});
+      const endingStock = await runQuery(qEndingStock);
 
 
-       const endingStockFinal = [];
-       for (let i = 0; i < endingStock.length; i++) {
+      const endingStockFinal = [];
+      for (let i = 0; i < endingStock.length; i++) {
          const row = endingStock[i];
+
+         const filteredItem = unitPrice.filter(item =>
+            item.Material_ID === row['Material_ID'] && item.PackUnit === row['PackUnit']
+         );
          const newData = {
-            Material_ID: row['Material_ID'], 
+            Material_ID: row['Material_ID'],
             PackUnit: row['PackUnit'],
-          //  total: row['subTotal'] * unitPriceObj[row['Material_ID']][0]['UnitPrice'],  
-            unitPriceObj: row['subTotal'] * unitPriceObj[row['Material_ID']]?.UnitPrice,  
-        
+            total: row['subTotal'] * (filteredItem.length > 0 ? filteredItem[0].UnitPrice : 1),
+            field : 'EndingStock',
+
          };
          endingStockFinal.push(newData);
       }
 
 
+      const finalData = [];
+      for (let i = 0; i < unitPrice.length; i++) {
+         const row = unitPrice[i];
+
+
+         const filteredItem = beginningStock.filter(item =>
+            item.Material_ID === row['Material_ID'] && item.PackUnit === row['PackUnit']
+         );
+         const filteredItem2 = inStock.filter(item =>
+            item.Material_ID === row['Material_ID'] && item.PackUnit === row['PackUnit']
+         );
+         const filteredItem3 = endingStockFinal.filter(item =>
+            item.Material_ID === row['Material_ID'] && item.PackUnit === row['PackUnit']
+         );
+
+
+         let valBeginningStock = filteredItem.length > 0 ? filteredItem[0].beginningStock : 0;
+         let valIn = filteredItem2.length > 0 ? filteredItem2[0].materialTotalAmount : 0;
+         let valEndingStock = filteredItem3.length > 0 ? filteredItem3[0].total : 0;
+
+         let cogs = valBeginningStock + valIn - valEndingStock;
+
+         const newData = {
+            Material_ID: row['Material_ID'],
+            Material_Desc1: row['Material_Desc1'] || null,
+            PackUnit: row['PackUnit'],
+            UOM_Desc: row['UOM_Desc'],
+
+            Qty_In: row['Qty_In'],
+            DateCreated: row['DateCreated'],
+            Convertion: row['Convertion'],
+            UnitPrice: row['UnitPrice'],
+            price: row['price'],
+            beginningStock: valBeginningStock,
+            in: valIn,
+            endingStock: valEndingStock,
+            cogs: cogs,
+         };
+         finalData.push(newData);
+      }
+
 
       res.json({
-         error: false, 
-         get : get,
+         error: false,
+         get: get,
          unitPrice: unitPrice,
-         unitPriceObj : unitPriceObj,
-         beginningStock : beginningStock,
-         inStock : inStock,  
-         endingStock :endingStock,
-         endingStockFinal : endingStockFinal,
+         //unitPriceObj: unitPriceObj,
+
+         beginningStock: beginningStock,
+         //beginningStockObj: beginningStockObj,
+
+         inStock: inStock,
+         //inStockObj :inStockObj,
+
+         // endingStock :endingStock,
+         endingStock: endingStockFinal,
+         //endingStockObj: endingStockFinalObj,
+
+         finalData: finalData,
 
       });
    } catch (err) {
@@ -189,8 +239,5 @@ router.get('/', async (req, res) => {
       });
    }
 });
-
-module.exports = router;
-
 
 module.exports = router;
