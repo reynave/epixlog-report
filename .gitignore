@@ -5,7 +5,10 @@
 /tmp
 /out-tsc
 /bazel-out
-/
+
+
+/DB MYSQL
+
 # Node
 /node_modules
 npm-debug.log
