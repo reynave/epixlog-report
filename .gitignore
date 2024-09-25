@@ -7,7 +7,7 @@
 /bazel-out
 
 
-/DB MYSQL
+/DBMYSQL
 
 # Node
 /node_modules
