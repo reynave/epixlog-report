@@ -1,0 +1,58 @@
+body {
+    font-family: "Inter", sans-serif;
+    font-weight: 400;
+    font-size: 0.85rem;
+    line-height: 1.2rem;
+}
+
+.bgn-1 {
+    background-color: #fffff4 !important;
+}
+
+.bgn-2 {
+    background-color: #faecec !important;
+}
+
+.bgn-3 {
+    background-color: #ecfffd !important;
+}
+
+td.border-start-1 {
+    border-left: 2px solid #ccc;
+}
+
+td.border-end-1 {
+    border-right: 2px solid #ccc;
+}
+th, td{
+    font-size: 0.7rem;
+}
+th {
+    text-transform: uppercase;
+    
+}
+
+thead th {
+    background: #f4f4f4 !important;
+}
+
+tfoot td {
+    text-transform: uppercase;
+    font-weight: bold;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+}
+
+td {
+    padding: 1px 3px !important;
+}
+
+.hl td {
+    background-color: #f4f4f4;
+}
+
+.wrapper{
+    margin: 10px auto;
+    width: 400px;
+}
+ 
