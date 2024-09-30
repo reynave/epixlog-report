@@ -73,7 +73,7 @@ router.get('/result/', async (req, res) => {
       
 
       let StockTake_Month = month - 1 == 0 ? 12 : month - 1;
-      let StockTake_Year = month < 1 ? year  : year - 1;
+      let StockTake_Year = StockTake_Month == 12 &&  month == 1 ?  year - 1 : year;
 
       const get = {
          StockTake_Month: StockTake_Month,
