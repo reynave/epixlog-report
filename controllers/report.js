@@ -9,7 +9,17 @@ const prefix = 'dbo.';
 // Fungsi untuk menjalankan query dengan promise
 const runQuery = (dbName, query) => {
    return new Promise((resolve, reject) => {
-      const connectionString = "Driver={" + process.env.SQL_DRIVE + "};Server=" + process.env.SQL_SERVER + ";Database=" + dbName + ";Trusted_Connection=yes;";
+       //const connectionString = "Driver={" + process.env.SQL_DRIVE + "};Server=" + process.env.SQL_SERVER + ";Database=" + dbName + ";Trusted_Connection=yes;";
+       //const connectionString = `Driver={ODBC Driver 17 for SQL Server};Server=epixbiz.marche.co.id,1435\\SERVER21;Database=EpixLOG_Mokka_Pluit;UID=sa;PWD=SQLserver123;"`;
+       const connectionString = `
+         Driver={${process.env.SQL_DRIVE}};
+         Server=${process.env.SQL_SERVER};
+         Database=${dbName};
+         UID=${process.env.SQL_USER};
+         PWD=${process.env.SQL_PASSWORD};
+         Trusted_Connection=${process.env.SQL_TRUSTED_CONNECTION};
+         Encrypt=${process.env.SQL_ENCRYPT};
+       `;
 
       sql.query(connectionString, query, (err, rows) => {
          if (err) {
@@ -25,16 +35,27 @@ const runQuery = (dbName, query) => {
 router.get('/test', async (req, res) => {
    console.log("test opk");
    try {
+      const test = await runQuery('EpiqureIMS_Global', "select CURRENT_TIMESTAMP as 'success' ");
       res.json({
          error: false,
-         get: req.query['month'] ? parseInt(req.query['month']) : 0,
-         year: req.query['year'] ? parseInt(req.query['year']) : 0,
+         connection: test,
+         get: req.query,
       });
    } catch (err) {
       console.error('Error: ', err);
+      const connectionString = `
+      Driver={${process.env.SQL_DRIVE}};
+      Server=${process.env.SQL_SERVER};
+      Database=${dbName};
+      UID=${process.env.SQL_USER};
+      PWD=${process.env.SQL_PASSWORD};
+      Encrypt=${process.env.SQL_ENCRYPT};
+    `;
+
       res.json({
-         error: true,
-         message: err.message
+         error: true, 
+         connectionString : connectionString,
+         message: err
       });
    }
 });

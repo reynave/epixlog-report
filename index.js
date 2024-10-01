@@ -2,6 +2,7 @@ require('dotenv').config();
 const sql = require('msnodesqlv8');
 const express = require('express');
 const app = express();
+const fs = require('fs');
 const port = process.env.PORT;
 const connectionString = "Driver={"+process.env.SQL_DRIVE+"};Server="+process.env.SQL_SERVER+";Database="+process.env.SQL_DATABASE+";Trusted_Connection=yes;";
 
@@ -27,15 +28,22 @@ app.use((req, res, next) => {
 
 
 app.use(express.json());
+app.use(express.static(__dirname + '/public'));
 
 app.use('/report', require('./controllers/report'));
+
 app.get('/', (req, res) => {
-    res.json({
-        error : false,
+    fs.readFile(__dirname + '/public/index.html', 'utf8', (err, text) => {
+        res.send(text);
     });
 });
 
-
+app.get('/table.html', (req, res) => {
+    fs.readFile(__dirname + '/public/table.html', 'utf8', (err, text) => {
+        res.send(text);
+    });
+});
+ 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
