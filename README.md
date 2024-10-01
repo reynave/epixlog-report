@@ -28,3 +28,5 @@ Buka Command Line(cmd) di windows
    nodemon index.js
 
 setelah berhasil jalankan http://localhost:3000/
+
+## Untuk menjalan ulang, tidak perlu install lagi, langsung ke no 6
