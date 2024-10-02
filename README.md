@@ -13,20 +13,20 @@ setting server IP di **.env** (sudah di setting sesuai server)
 ## Instalasi
 Buka Command Line(cmd) di windows 
 
-3. **Clone repositori**  
+1. **Clone repositori**  
    Jalankan perintah berikut di folder proyek Anda:
    ```bash
    git clone https://github.com/reynave/epixlog-report.git
 
-4. ```bash 
+2. ```bash 
    npm install
 
-5. ```bash 
+3. ```bash 
    npm i nodemon
 
 ## Run Server and App
 
-1. ```bash 
-   nodemon index.js
+```bash 
+nodemon index.js
 
 setelah berhasil jalankan http://localhost:3000/
