@@ -27,12 +27,21 @@ Buka Command Line(cmd) di windows
 
 ## Run Server and App
 
-1. ```bash 
-   nodemon index.js
+```
+nodemon index.js
+```
+atau 
+```
+node index.js
+```
+
+jika ingin run selalu di dalam backgroun bisa dengan **PM2**
+
 
 Setelah berhasil jalankan http://localhost:3000/ 
 (setting port ada di **.env**)
 
 ## Update patch version (jika ada)
-1. ```bash 
-   git pull
+```
+git pull
+```
