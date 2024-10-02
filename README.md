@@ -1,7 +1,7 @@
 # EPIXLOG Report
 
 Selamat datang di proyek EPIXLOG Report. Berikut adalah langkah-langkah untuk menginstal dan menjalankan aplikasi ini.
-
+setting server IP di **.env** (sudah di setting sesuai server)
 ## Prerequisites
 
 1. **Install Node.js v20.x atau lebih**  
