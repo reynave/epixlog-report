@@ -35,7 +35,7 @@ atau
 node index.js
 ```
 
-jika ingin run selalu di dalam backgroun bisa dengan **PM2**
+jika ingin run selalu di dalam background bisa dengan **PM2**
 
 
 Setelah berhasil jalankan http://localhost:3000/ 
