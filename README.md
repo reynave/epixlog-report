@@ -11,6 +11,7 @@ setting server IP di **.env** (sudah di setting sesuai server)
    [Download GitHub CLI](https://cli.github.com/)
 
 ## Instalasi
+Masuk folder project anda untuk seterusnya 
 Buka Command Line(cmd) di windows 
 
 1. **Clone repositori**  
@@ -31,3 +32,7 @@ Buka Command Line(cmd) di windows
 
 Setelah berhasil jalankan http://localhost:3000/ 
 (setting port ada di **.env**)
+
+## Update patch version (jika ada)
+1. ```bash 
+   git pull
