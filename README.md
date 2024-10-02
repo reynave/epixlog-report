@@ -24,9 +24,9 @@ Buka Command Line(cmd) di windows
 5. ```bash 
    npm i nodemon
 
-6. ```bash 
+## Run Server and App
+
+1. ```bash 
    nodemon index.js
 
 setelah berhasil jalankan http://localhost:3000/
-
-## Untuk menjalan ulang, tidak perlu install lagi, langsung ke no 6
