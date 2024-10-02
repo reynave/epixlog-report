@@ -26,7 +26,8 @@ Buka Command Line(cmd) di windows
 
 ## Run Server and App
 
-```bash 
-nodemon index.js
+1. ```bash 
+   nodemon index.js
 
-setelah berhasil jalankan http://localhost:3000/
+Setelah berhasil jalankan http://localhost:3000/ 
+(setting port ada di **.env**)
