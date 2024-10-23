@@ -107,7 +107,10 @@
             }); 
             
             $("#onSubmit").on("click",function(){
-                location.href=`table.html?month=${date.getMonth() + 1}&year=${date.getFullYear()}&db=${$('#selectDb').val()}`;
+                let year = $('#year').val();
+                let month  = $('#month').val();
+                
+                location.href=`table.html?month=${month}&year=${year}&db=${$('#selectDb').val()}`;
             });
         });
     </script>
