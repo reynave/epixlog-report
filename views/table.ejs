@@ -275,27 +275,27 @@
          var data = typeof jsonData !== 'object' ? JSON.parse(jsonData) : jsonData;
 
          // Header kolom
-         var csv = 'Material_ID,Material_Desc1,Document_Type,PackUnit,Qty_In,DateCreated,Convertion,UnitPrice,Price,begin.stock,begin.pricing,in.stock,in.pricing,end.stock,end.pricing,cogs.stock,cogs.pricing\n';
-
+         var csv = 'Material_ID;Material_Desc1;Document_Type;PackUnit;Qty_In;DateCreated;Convertion;UnitPrice;Price;begin.stock;begin.pricing;in.stock;in.pricing;end.stock;end.pricing;cogs.stock;cogs.pricing\n';
+         let delimited = ';';
          // Looping setiap objek dalam data JSON
          data.forEach(function (row) {
-            csv += row.Material_ID.replace(',', '') + ',' +
-               (row.Material_Desc1 || '').replace(',', '') + ',' +
-               row.Document_Type.replace(',', '') + ',' +
-               row.PackUnit.replace(',', '') + ',' +
-               row.Qty_In + ',' +
-               row.DateCreated + ',' +
-               row.Convertion + ',' +
-               row.UnitPrice + ',' +
-               row.Price + ',' +
+            csv += row.Material_ID.replace(',', '') + delimited +
+               (row.Material_Desc1 || '').replace(',', '') + delimited +
+               row.Document_Type.replace(',', '') +delimited+
+               row.PackUnit.replace(',', '') + delimited +
+               row.Qty_In + delimited +
+               row.DateCreated + delimited +
+               row.Convertion + delimited +
+               row.UnitPrice + delimited +
+               row.Price + delimited +
 
-               row.begin.stock + ',' +
-               row.begin.pricing + ',' +
-               row.in.stock + ',' +
-               row.in.pricing + ',' +
-               row.end.stock + ',' +
-               row.end.pricing + ',' +
-               row.cogs.stock + ',' +
+               row.begin.stock + delimited +
+               row.begin.pricing + delimited +
+               row.in.stock + delimited +
+               row.in.pricing + delimited +
+               row.end.stock + delimited +
+               row.end.pricing + delimited +
+               row.cogs.stock + delimited +
                row.cogs.pricing + '\n';
          });
 
