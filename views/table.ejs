@@ -18,17 +18,19 @@
 <body>
    <div class="container-fluid">
       <div class="row mb-3">
-         <div class="col-2">
+         <div class="col-3">
             <button class="btn btn-sm btn-light border" id="back"> Back</button>
          </div>
-         <div class="col-8 align-content-center">
+         <div class="col-6 align-content-center">
             <div class="text-center mt-1">
-               <h6>Month : <span id="month"></span> &
-                  Year : <span id="year"></span></h6>
+               <h6><span id="db"></span></h6>
+               <h6>Month : <span id="month"></span> &  Year : <span id="year"></span></h6>
             </div>
          </div>
-         <div class="col-2 text-end">
-            <button class="btn btn-sm btn-success" id="exportCSV">Export CSV</button>
+         <div class="col-3 text-end">
+            <button class="btn btn-sm btn-success ms-1" id="exportCSV">CSV</button>
+
+            <button class="btn btn-sm btn-primary  ms-1" id="export-btn">Excel</button>
          </div>
       </div>
       <div class="row">
@@ -107,9 +109,10 @@
       integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
       crossorigin="anonymous"></script>
 
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
    <script>
       var urlParams = new URLSearchParams(window.location.search);
-
+     
       const getParam = {
          month: urlParams.get('month'),
          year: urlParams.get('year'),
@@ -125,6 +128,8 @@
       });
       var digit = 2;
       let items = [];
+      let exlsJson = [];
+      
       function currency(val) {
          return val == null ? 0 : formatter.format(val.toFixed(digit)).replace("IDR", "");
       }
@@ -135,7 +140,7 @@
          });
          $('#exportCSV').on("click", function () {
             console.log("exportCSV");
-            downloadCSV(items, 'data.csv');
+            downloadCSV(items);
 
          });
 
@@ -155,13 +160,40 @@
 
                $('#month').html(data['get']['month']);
                $('#year').html(data['get']['year']);
+               $('#db').html(urlParams.get('db'));
+              
                console.log(data);
                let i = 1;
                items = data['finalData'];
-               tbodyData();
-
+               tbodyData(); 
                const total = data['total'];
 
+               let temp =  {  
+                  no: '', 
+                  Material_ID: 'TOTAL :', 
+                  Material_Desc1: '',
+                  UOM_Desc : '',
+                  UnitPrice : '',
+                  BaseUnitDesc :  '',
+                  UnitPrice :  '',
+
+                  begin_stock : total['begin']['stock'], 
+                  begin_pricing : total['begin']['pricing'],  
+                  
+                  in_stock : total['in']['stock'], 
+                  in_pricing : total['in']['pricing'],  
+                  
+                  end_stock : total['end']['stock'], 
+                  end_pricing : total['end']['pricing'],  
+                  
+                  cogs_stock : total['cogs']['stock'],  
+                  cogs_pricing : total['cogs']['pricing'],  
+                  
+               }
+               
+               
+               
+               exlsJson.push(temp);
 
 
                $('#dataTotal').append(`
@@ -201,7 +233,32 @@
          $.each(items, function (index, el) {
             if (el['UOM_Desc'] !== undefined) {
                // if (el['cogs']['stock'].toFixed(0) != 0 || $('#showAll').is(":checked") == true) {
-
+               
+              let temp =  {  
+                  no: i, 
+                  Material_ID: el['Material_ID'], 
+                  Material_Desc1: el['Material_Desc1'],
+                  UOM_Desc : el['UOM_Desc'],
+                  UnitPrice : el['UnitPrice'],
+                  BaseUnitDesc : el['BaseUnitDesc'],
+                  UnitPrice : el['UnitPrice'],
+                  begin_stock : el['begin']['stock'], 
+                  begin_pricing : el['begin']['pricing'],  
+                  
+                  in_stock : el['in']['stock'], 
+                  in_pricing : el['in']['pricing'],  
+                  
+                  end_stock : el['end']['stock'], 
+                  end_pricing : el['end']['pricing'],  
+                  
+                  cogs_stock : el['cogs']['stock'],  
+                  cogs_pricing : el['cogs']['pricing'],  
+                  
+               }
+               
+               
+               
+               exlsJson.push(temp);
                if (search.length > 1) {
                   if (el['Material_ID'] == search) {
 
@@ -275,8 +332,8 @@
          var data = typeof jsonData !== 'object' ? JSON.parse(jsonData) : jsonData;
 
          // Header kolom
-         var csv = 'Material_ID;Material_Desc1;Document_Type;PackUnit;Qty_In;DateCreated;Convertion;UnitPrice;Price;begin.stock;begin.pricing;in.stock;in.pricing;end.stock;end.pricing;cogs.stock;cogs.pricing\n';
-         let delimited = ';';
+         var csv = 'Material_ID,Material_Desc1,Document_Type,PackUnit,Qty_In,DateCreated,Convertion,UnitPrice,Price,begin.stock,begin.pricing,in.stock,in.pricing,end.stock,end.pricing,cogs.stock,cogs.pricing\n';
+         let delimited = ',';
          // Looping setiap objek dalam data JSON
          data.forEach(function (row) {
             csv += row.Material_ID.replace(',', '') + delimited +
@@ -302,7 +359,9 @@
          return csv;
       }
 
-      function downloadCSV(jsonData, filename) {
+      function downloadCSV(jsonData) {
+         let filename = urlParams.get('year')+'_'+urlParams.get('month')+'_'+urlParams.get('db')+".csv";
+
          var csv = convertJSONToCSV(jsonData);
 
          var blob = new Blob([csv], { type: 'text/csv' });
@@ -316,6 +375,25 @@
          document.body.removeChild(a);
       }
 
+
+      function exportJsonToExcel() {
+            // Create a new workbook
+            const workbook = XLSX.utils.book_new();
+
+            // Convert JSON data to a worksheet
+            const worksheet = XLSX.utils.json_to_sheet(exlsJson);
+
+            // Append the worksheet to the workbook
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+ 
+            let nameFile = urlParams.get('year')+'_'+urlParams.get('month')+'_'+urlParams.get('db')+".xlsx";
+
+            // Export the workbook as an Excel file
+            XLSX.writeFile(workbook, nameFile);
+        }
+
+        // Event listener for the export button
+        document.getElementById("export-btn").addEventListener("click", exportJsonToExcel);
    </script>
 </body>
 
