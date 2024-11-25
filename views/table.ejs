@@ -24,7 +24,7 @@
          <div class="col-6 align-content-center">
             <div class="text-center mt-1">
                <h6><span id="db"></span></h6>
-               <h6>Month : <span id="month"></span> &  Year : <span id="year"></span></h6>
+               <h6>Month : <span id="month"></span> & Year : <span id="year"></span></h6>
             </div>
          </div>
          <div class="col-3 text-end">
@@ -47,9 +47,9 @@
                            <label for="showAll">Show All</label>
                         </div> -->
                         <div>
-                           <input type="text" class="form-control form-control-sm search"
-                              placeholder="Search by Material_ID" onchange="onSearch();">
-
+                           <!-- <input type="text" class="form-control form-control-sm search"
+                              placeholder="Search by Material_ID" onchange="onSearch();"> -->
+                           MATERIAL
                         </div>
 
 
@@ -92,7 +92,7 @@
             </table>
             <div class="p-5 text-center" id="loading">
                <div>
-                   <img src="./Animation - 1729584499834.gif" width="100">
+                  <img src="./Animation - 1729584499834.gif" width="100">
                </div>
 
                <div> Loading...</div>
@@ -112,7 +112,7 @@
    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
    <script>
       var urlParams = new URLSearchParams(window.location.search);
-     
+
       const getParam = {
          month: urlParams.get('month'),
          year: urlParams.get('year'),
@@ -129,7 +129,7 @@
       var digit = 2;
       let items = [];
       let exlsJson = [];
-      
+      let exportFinal = {};
       function currency(val) {
          return val == null ? 0 : formatter.format(val.toFixed(digit)).replace("IDR", "");
       }
@@ -161,39 +161,35 @@
                $('#month').html(data['get']['month']);
                $('#year').html(data['get']['year']);
                $('#db').html(urlParams.get('db'));
-              
+
                console.log(data);
                let i = 1;
                items = data['finalData'];
-               tbodyData(); 
+               tbodyData();
                const total = data['total'];
 
-               let temp =  {  
-                  no: '', 
-                  Material_ID: 'TOTAL :', 
+               exportFinal = {
+                  no: '',
+                  Material_ID: 'TOTAL :',
                   Material_Desc1: '',
-                  UOM_Desc : '',
-                  UnitPrice : '',
-                  BaseUnitDesc :  '',
-                  UnitPrice :  '',
+                  UOM_Desc: '',
+                  UnitPrice: '',
+                  BaseUnitDesc: '',
 
-                  begin_stock : total['begin']['stock'], 
-                  begin_pricing : total['begin']['pricing'],  
-                  
-                  in_stock : total['in']['stock'], 
-                  in_pricing : total['in']['pricing'],  
-                  
-                  end_stock : total['end']['stock'], 
-                  end_pricing : total['end']['pricing'],  
-                  
-                  cogs_stock : total['cogs']['stock'],  
-                  cogs_pricing : total['cogs']['pricing'],  
-                  
+                  begin_stock: total['begin']['stock'],
+                  begin_pricing: total['begin']['pricing'],
+
+                  in_stock: total['in']['stock'],
+                  in_pricing: total['in']['pricing'],
+
+                  end_stock: total['end']['stock'],
+                  end_pricing: total['end']['pricing'],
+
+                  cogs_stock: total['cogs']['stock'],
+                  cogs_pricing: total['cogs']['pricing'],
+
                }
-               
-               
-               
-               exlsJson.push(temp);
+               exlsJson.push(exportFinal);
 
 
                $('#dataTotal').append(`
@@ -211,8 +207,7 @@
                         
                         <td class="text-end">${currency(total['cogs']['stock'])}</td> 
                         <td class="text-end">${currency(total['cogs']['pricing'])}</td> 
-
-                  <tr> 
+                  <tr>  
                `);
             },
             error: function (err) {
@@ -226,44 +221,37 @@
       function tbodyData() {
          let i = 1;
 
-         let search = $('.search').val();
-
-         console.log(search, search.length);
 
          $.each(items, function (index, el) {
-            if (el['UOM_Desc'] !== undefined) {
-               // if (el['cogs']['stock'].toFixed(0) != 0 || $('#showAll').is(":checked") == true) {
-               
-              let temp =  {  
-                  no: i, 
-                  Material_ID: el['Material_ID'], 
-                  Material_Desc1: el['Material_Desc1'],
-                  UOM_Desc : el['UOM_Desc'],
-                  UnitPrice : el['UnitPrice'],
-                  BaseUnitDesc : el['BaseUnitDesc'],
-                  UnitPrice : el['UnitPrice'],
-                  begin_stock : el['begin']['stock'], 
-                  begin_pricing : el['begin']['pricing'],  
-                  
-                  in_stock : el['in']['stock'], 
-                  in_pricing : el['in']['pricing'],  
-                  
-                  end_stock : el['end']['stock'], 
-                  end_pricing : el['end']['pricing'],  
-                  
-                  cogs_stock : el['cogs']['stock'],  
-                  cogs_pricing : el['cogs']['pricing'],  
-                  
-               }
-               
-               
-               
-               exlsJson.push(temp);
-               if (search.length > 1) {
-                  if (el['Material_ID'] == search) {
+
+            // if (el['cogs']['stock'].toFixed(0) != 0 || $('#showAll').is(":checked") == true) {
+
+            let temp = {
+               no: i,
+               Material_ID: el['Material_ID'],
+               Material_Desc1: el['Material_Desc1'],
+               UOM_Desc: el['UOM_Desc'],
+               UnitPrice: el['UnitPrice'],
+               BaseUnitDesc: el['BaseUnitDesc'],
+
+               begin_stock: el['begin']['stock'],
+               begin_pricing: el['begin']['pricing'],
+
+               in_stock: el['in']['stock'],
+               in_pricing: el['in']['pricing'],
+
+               end_stock: el['end']['stock'],
+               end_pricing: el['end']['pricing'],
+
+               cogs_stock: el['cogs']['stock'],
+               cogs_pricing: el['cogs']['pricing'],
+
+            }
 
 
-                     $('#data').append(`
+            exlsJson.push(temp);
+
+            $('#data').append(`
                         <tr class="${el['cogs']['stock'].toFixed(0) == 0 ? 'isZero' : ''}">
                            <td>${i++}</td>
                            <td>${el['Material_ID']}</td>
@@ -286,34 +274,12 @@
                            <td class="text-end">${currency(el['cogs']['pricing'])}</td>  
                         <tr> 
                      `);
-                  }
-               } else {
-                  $('#data').append(`
-                     <tr class="${el['cogs']['stock'].toFixed(0) == 0 ? 'isZero' : ''}">
-                        <td>${i++}</td>
-                        <td>${el['Material_ID']}</td>
-                        <td>${el['Material_Desc1']}</td> 
-                        <td>${el['UOM_Desc']}</td> 
-                        
-                        <td class="text-end">${currency(el['UnitPrice'])} </td>
-                        <td>${el['BaseUnitDesc']} </td>
-                        
-                        <td class="text-end bgn-1">${currency(el['begin']['stock'])} </td>
-                        <td class="text-end bgn-1">${currency(el['begin']['pricing'])} </td>
-                        
-                        <td class="text-end bgn-2 ">${currency(el['in']['stock'])} </td>
-                        <td class="text-end bgn-2 ">${currency(el['in']['pricing'])} </td>
-                        
-                        <td class="text-end bgn-3 ">${currency(el['end']['stock'])}</td>
-                        <td class="text-end bgn-3 ">${currency(el['end']['pricing'])}</td>
-                        
-                        <td class="text-end">${currency(el['cogs']['stock'])}</td> 
-                        <td class="text-end">${currency(el['cogs']['pricing'])}</td>  
-                     <tr> 
-                  `);
-               }
-               // }
-            }
+
+
+
+
+            // }
+
          });
       }
 
@@ -338,7 +304,7 @@
          data.forEach(function (row) {
             csv += row.Material_ID.replace(',', '') + delimited +
                (row.Material_Desc1 || '').replace(',', '') + delimited +
-               row.Document_Type.replace(',', '') +delimited+
+               row.Document_Type.replace(',', '') + delimited +
                row.PackUnit.replace(',', '') + delimited +
                row.Qty_In + delimited +
                row.DateCreated + delimited +
@@ -355,12 +321,32 @@
                row.cogs.stock + delimited +
                row.cogs.pricing + '\n';
          });
+         csv += '' + delimited +
+            'TOTAL' + delimited +
+            '' + delimited +
+            '' + delimited +
+            '' + delimited +
+            '' + delimited +
+            '' + delimited +
+            '' + delimited +
+            '' + delimited +
 
+            exportFinal.begin_stock + delimited +
+            exportFinal.begin_pricing + delimited +
+
+            exportFinal.in_stock + delimited +
+            exportFinal.in_pricing + delimited +
+
+            exportFinal.end_stock + delimited +
+            exportFinal.end_pricing + delimited +
+
+            exportFinal.cogs_stock + delimited +
+            exportFinal.cogs_pricing + '\n';
          return csv;
       }
 
       function downloadCSV(jsonData) {
-         let filename = urlParams.get('year')+'_'+urlParams.get('month')+'_'+urlParams.get('db')+".csv";
+         let filename = urlParams.get('year') + '_' + urlParams.get('month') + '_' + urlParams.get('db') + ".csv";
 
          var csv = convertJSONToCSV(jsonData);
 
@@ -377,23 +363,23 @@
 
 
       function exportJsonToExcel() {
-            // Create a new workbook
-            const workbook = XLSX.utils.book_new();
+         // Create a new workbook
+         const workbook = XLSX.utils.book_new();
 
-            // Convert JSON data to a worksheet
-            const worksheet = XLSX.utils.json_to_sheet(exlsJson);
+         // Convert JSON data to a worksheet
+         const worksheet = XLSX.utils.json_to_sheet(exlsJson);
 
-            // Append the worksheet to the workbook
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
- 
-            let nameFile = urlParams.get('year')+'_'+urlParams.get('month')+'_'+urlParams.get('db')+".xlsx";
+         // Append the worksheet to the workbook
+         XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
 
-            // Export the workbook as an Excel file
-            XLSX.writeFile(workbook, nameFile);
-        }
+         let nameFile = urlParams.get('year') + '_' + urlParams.get('month') + '_' + urlParams.get('db') + ".xlsx";
 
-        // Event listener for the export button
-        document.getElementById("export-btn").addEventListener("click", exportJsonToExcel);
+         // Export the workbook as an Excel file
+         XLSX.writeFile(workbook, nameFile);
+      }
+
+      // Event listener for the export button
+      document.getElementById("export-btn").addEventListener("click", exportJsonToExcel);
    </script>
 </body>
 

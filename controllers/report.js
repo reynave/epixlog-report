@@ -9,9 +9,9 @@ const prefix = 'dbo.';
 // Fungsi untuk menjalankan query dengan promise
 const runQuery = (dbName, query) => {
    return new Promise((resolve, reject) => {
-       //const connectionString = "Driver={" + process.env.SQL_DRIVE + "};Server=" + process.env.SQL_SERVER + ";Database=" + dbName + ";Trusted_Connection=yes;";
-       //const connectionString = `Driver={ODBC Driver 17 for SQL Server};Server=epixbiz.marche.co.id,1435\\SERVER21;Database=EpixLOG_Mokka_Pluit;UID=sa;PWD=SQLserver123;"`;
-       const connectionString = `
+      //const connectionString = "Driver={" + process.env.SQL_DRIVE + "};Server=" + process.env.SQL_SERVER + ";Database=" + dbName + ";Trusted_Connection=yes;";
+      //const connectionString = `Driver={ODBC Driver 17 for SQL Server};Server=epixbiz.marche.co.id,1435\\SERVER21;Database=EpixLOG_Mokka_Pluit;UID=sa;PWD=SQLserver123;"`;
+      const connectionString = `
          Driver={${process.env.SQL_DRIVE}};
          Server=${process.env.SQL_SERVER};
          Database=${dbName};
@@ -53,8 +53,8 @@ router.get('/test', async (req, res) => {
     `;
 
       res.json({
-         error: true, 
-         connectionString : connectionString,
+         error: true,
+         connectionString: connectionString,
          message: err
       });
    }
@@ -68,12 +68,12 @@ router.get('/selectDb/', async (req, res) => {
          order by OutletDesc_1 ASC;
       `;
 
-     // Jalankan query pertama
-     const items = await runQuery('EpiqureIMS_Global', q);
-     
+      // Jalankan query pertama
+      const items = await runQuery('EpiqureIMS_Global', q);
+
       res.json({
          error: false,
-         items : items
+         items: items
       });
    } catch (err) {
       console.error('Error: ', err);
@@ -88,13 +88,13 @@ router.get('/selectDb/', async (req, res) => {
 router.get('/result/', async (req, res) => {
    try {
       console.log(req.query.month);
-      let month =  req.query['month'] ? parseInt(req.query['month']) : 8;
+      let month = req.query['month'] ? parseInt(req.query['month']) : 8;
       let year = req.query['year'] ? parseInt(req.query['year']) : 2024;
       let db = req.query['db'];
-      
+
 
       let StockTake_Month = month - 1 == 0 ? 12 : month - 1;
-      let StockTake_Year = StockTake_Month == 12 &&  month == 1 ?  year - 1 : year;
+      let StockTake_Year = StockTake_Month == 12 && month == 1 ? year - 1 : year;
 
       const get = {
          StockTake_Month: StockTake_Month,
@@ -121,7 +121,7 @@ router.get('/result/', async (req, res) => {
       // Loop melalui hasil query pertama
       for (let i = 0; i < Inventory.length; i++) {
          const row = Inventory[i];
-          const q2 = ` 
+         const q2 = ` 
            SELECT top 1 
                s.Material_ID,  m.Material_Desc1, m.Material_Desc2, u.UOM_Desc1, s.BaseUnit, b.UOM_Desc1 as 'BaseUnitDesc', 
                s.PackUnit, s.Material_UnitCost as 'UnitPrice',
@@ -133,7 +133,7 @@ router.get('/result/', async (req, res) => {
             WHERE s.Material_ID = '${row.Material_ID}' AND s.PackUnit = '${row.PackUnit}' 
             and m.Material_Type = 0 and m.Material_Status = 0 and m.StockTake = 1
             ORDER BY s.DateCreated DESC;
-         `; 
+         `;
 
          const q2Delete = ` 
             SELECT top 1 s.Material_ID,  m.Material_Desc1, m.Material_Desc2, u.UOM_Desc1, '${row.Document_Type}' as 'Document_Type',
@@ -153,8 +153,8 @@ router.get('/result/', async (req, res) => {
             Material_ID: row['Material_ID'],
             Material_Desc1: supplier['Material_Desc1'] || null,
             Document_Type: row['Document_Type'],
-            PackUnit: row['PackUnit'], 
-            UOM_Desc: supplier['UOM_Desc1'], 
+            PackUnit: row['PackUnit'],
+            UOM_Desc: supplier['UOM_Desc1'],
             BaseUnit: supplier['BaseUnit'],
             BaseUnitDesc: supplier['BaseUnitDesc'],
             Qty_In: row['Qty_In'],
@@ -259,22 +259,22 @@ router.get('/result/', async (req, res) => {
 
 
       const total = {
-         begin : {
-            stock : 0,
-            pricing : 0,
+         begin: {
+            stock: 0,
+            pricing: 0,
          },
-         in : {
-            stock : 0,
-            pricing : 0,
+         in: {
+            stock: 0,
+            pricing: 0,
          },
-         end : {
-            stock : 0,
-            pricing : 0,
+         end: {
+            stock: 0,
+            pricing: 0,
          },
-         cogs : {
-            stock : 0,
-            pricing : 0,
-         }, 
+         cogs: {
+            stock: 0,
+            pricing: 0,
+         },
       }
 
       const finalData = [];
@@ -294,7 +294,7 @@ router.get('/result/', async (req, res) => {
 
 
          let valBeginningStock = filteredItem.length > 0 ? filteredItem[0].priceBegin : 0;
-        
+
          let var_begin = {
             stock: filteredItem.length > 0 ? filteredItem[0].stockBegin : 0,
             pricing: filteredItem.length > 0 ? filteredItem[0].priceBegin : 0
@@ -319,7 +319,7 @@ router.get('/result/', async (req, res) => {
             Document_Type: row['Document_Type'],
             PackUnit: row['PackUnit'],
             UOM_Desc: row['UOM_Desc'],
-            BaseUnitDesc: row['BaseUnitDesc'],
+            BaseUnitDesc: row['BaseUnitDesc'] || '-1',
             Qty_In: row['Qty_In'],
             DateCreated: row['DateCreated'],
             Convertion: row['Convertion'],
@@ -332,26 +332,29 @@ router.get('/result/', async (req, res) => {
             end: var_end,
             cogs: var_cogs,
          };
-         finalData.push(newData);
+       
 
-         total.begin.stock += var_begin.stock;
-         total.begin.pricing += var_begin.pricing;
-         
-         total.in.stock += var_in.stock;
-         total.in.pricing  += var_in.pricing;
-      
-         total.end.stock += var_end.stock;
-         total.end.pricing  += var_end.pricing;
+         if (newData['BaseUnitDesc'] != '-1') { 
+            finalData.push(newData);
+            
+            total.begin.stock += var_begin.stock;
+            total.begin.pricing += var_begin.pricing;
 
-         total.cogs.stock  += var_cogs.stock;
-         total.cogs.pricing += var_cogs.pricing;
-      
+            total.in.stock += var_in.stock;
+            total.in.pricing += var_in.pricing;
+
+            total.end.stock += var_end.stock;
+            total.end.pricing += var_end.pricing;
+
+            total.cogs.stock += var_cogs.stock;
+            total.cogs.pricing += var_cogs.pricing;
+         }
       }
 
 
       res.json({
          error: false,
-         get: get, 
+         get: get,
 
          // beginningStock: beginningStock, 
          // inStock: inStock, 
@@ -359,13 +362,13 @@ router.get('/result/', async (req, res) => {
          // endingStock: endingStock,
          // unitPrice: unitPrice,
          finalData: finalData,
-         total : total,
+         total: total,
       });
    } catch (err) {
       console.error('Error: ', err);
       res.status(401).json({
          error: true,
-         note : 'error DB',
+         note: 'error DB',
          message: err.message
       });
    }
