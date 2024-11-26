@@ -65,6 +65,7 @@ router.get('/selectDb/', async (req, res) => {
       const q = `
          SELECT OutletDesc_1 as 'name', DB_Name 
          FROM OutletProfile 
+         where OutletActivation = 0
          order by OutletDesc_1 ASC;
       `;
 
