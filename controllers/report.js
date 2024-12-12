@@ -93,7 +93,11 @@ router.get('/result/', async (req, res) => {
       let year = req.query['year'] ? parseInt(req.query['year']) : 2024;
       let db = req.query['db'];
 
+      var d = new Date(year, month, 0);
+      var maxDate = year+'-'+month+'-'+d.getDate().toString();
+      //var maxDate = '2024-11-30';
 
+      console.log('maxDate',maxDate);
       let StockTake_Month = month - 1 == 0 ? 12 : month - 1;
       let StockTake_Year = StockTake_Month == 12 && month == 1 ? year - 1 : year;
 
@@ -104,7 +108,18 @@ router.get('/result/', async (req, res) => {
          year: year
       }
       const q = `
-       SELECT i.Material_ID, i.PackUnit, i.Qty_In, i.DateCreated,   i.RowNum, i.Document_Type
+        SELECT i.Material_ID, i.PackUnit, i.Qty_In, i.DateCreated, i.Document_Date,   i.RowNum, i.Document_Type
+       FROM (
+           SELECT *,
+				ROW_NUMBER() OVER (PARTITION BY Material_ID, PackUnit ORDER BY Document_Date DESC) AS RowNum
+			FROM Inventory
+			WHERE Document_Type != 'StokeTake' and 
+			Document_Date <= Convert(datetime, '${maxDate}' ) 
+       ) AS i
+       WHERE i.RowNum = 1
+       `;
+
+       const qVer0 = `SELECT i.Material_ID, i.PackUnit, i.Qty_In, i.DateCreated,   i.RowNum, i.Document_Type
        FROM (
            SELECT *,
                ROW_NUMBER() OVER (PARTITION BY Material_ID, PackUnit ORDER BY DateCreated DESC) AS RowNum
@@ -126,6 +141,20 @@ router.get('/result/', async (req, res) => {
            SELECT top 1 
                s.Material_ID,  m.Material_Desc1, m.Material_Desc2, u.UOM_Desc1, s.BaseUnit, b.UOM_Desc1 as 'BaseUnitDesc', 
                s.PackUnit, s.Material_UnitCost as 'UnitPrice',
+               s.DateCreated,  s.Document_Date , '${row.Document_Type}' as 'Document_Type', 1 as 'Convertion'
+            FROM Inventory as s
+            left join Material as m on m.Material_ID = s.Material_ID 
+            join UOM as u on u.UOM_ID = s.PackUnit
+            join uom as b on b.UOM_ID = s.BaseUnit
+            WHERE s.Material_ID = '${row.Material_ID}' AND s.PackUnit = '${row.PackUnit}' 
+            and m.Material_Type = 0 and m.Material_Status = 0 and m.StockTake = 1   and  s.Document_Date <= Convert(datetime, '${maxDate}' )
+            ORDER BY s.Document_Date DESC;
+         `;
+
+         const q2Ver0 = ` 
+           SELECT top 1 
+               s.Material_ID,  m.Material_Desc1, m.Material_Desc2, u.UOM_Desc1, s.BaseUnit, b.UOM_Desc1 as 'BaseUnitDesc', 
+               s.PackUnit, s.Material_UnitCost as 'UnitPrice',
                s.DateCreated, '${row.Document_Type}' as 'Document_Type', 1 as 'Convertion'
             FROM Inventory as s
             left join Material as m on m.Material_ID = s.Material_ID 
@@ -135,22 +164,13 @@ router.get('/result/', async (req, res) => {
             and m.Material_Type = 0 and m.Material_Status = 0 and m.StockTake = 1
             ORDER BY s.DateCreated DESC;
          `;
-
-         const q2Delete = ` 
-            SELECT top 1 s.Material_ID,  m.Material_Desc1, m.Material_Desc2, u.UOM_Desc1, '${row.Document_Type}' as 'Document_Type',
-            s.PackUnit,  s.Convertion,  s.UnitPrice,  s.DateCreated
-            FROM Supplier_Material_Link as s
-            left join Material as m on m.Material_ID = s.Material_ID 
-            join UOM as u on u.UOM_ID = s.PackUnit
-           WHERE s.Material_ID = '${row.Material_ID}' AND s.PackUnit =  '${row.PackUnit}'
-           ORDER BY s.DateCreated DESC
-         `;
          const supplierRows = await runQuery(db, q2);
 
 
          const supplier = supplierRows[0] || {};
 
          const newData = {
+          //  q :  q2,
             Material_ID: row['Material_ID'],
             Material_Desc1: supplier['Material_Desc1'] || null,
             Document_Type: row['Document_Type'],
@@ -160,6 +180,7 @@ router.get('/result/', async (req, res) => {
             BaseUnitDesc: supplier['BaseUnitDesc'],
             Qty_In: row['Qty_In'],
             DateCreated: row['DateCreated'],
+            Document_Date: supplier['Document_Date'], 
             Convertion: supplier['Convertion'] || 1, // default to 1 if undefined
             Price: supplier['UnitPrice'] || 0,   // default to 0 if undefined
             UnitPrice: supplier['UnitPrice'] || 0,
@@ -255,7 +276,7 @@ router.get('/result/', async (req, res) => {
             item.Material_ID === row['Material_ID'] && item.PackUnit === row['PackUnit']
          );
          endingStock[i]['UnitPrice'] = (filteredItem.length > 0 ? filteredItem[0].UnitPrice : 1);
-         endingStock[i]['priceBegin'] = endingStock[i]['stockBeginConverting'] * (filteredItem.length > 0 ? filteredItem[0].UnitPrice : 1);
+         endingStock[i]['priceBegin'] = endingStock[i]['stockBeginConverting'] * endingStock[i]['UnitPrice'];
       }
 
 
@@ -356,12 +377,12 @@ router.get('/result/', async (req, res) => {
       res.json({
          error: false,
          get: get,
-
+         unitPrice: unitPrice,
          // beginningStock: beginningStock, 
          // inStock: inStock, 
-         // endingStock :endingStock,
+          endingStock :endingStock,
          // endingStock: endingStock,
-         // unitPrice: unitPrice,
+        
          finalData: finalData,
          total: total,
       });
