@@ -59,6 +59,8 @@
                      <th colspan="2" class="text-center">Beginning Stock </th>
                      <th colspan="2" class="text-center">In Stock/GRN</th>
                      <th colspan="2" class="text-center">Ending Stock</th>
+                     
+                     <th colspan="2" class="text-center">Transaction Out</th>
                      <th colspan="2" class="text-center">COGS</th>
 
                   </tr>
@@ -79,9 +81,14 @@
 
                      <th class="text-end">Stock </th>
                      <th class="text-end">Pricing </th>
+ 
+                     <th class="text-end">Qty </th>
+                     <th class="text-end">Price </th>
 
                      <th class="text-end">Stock </th>
                      <th class="text-end">Pricing </th>
+
+
                   </tr>
                </thead>
                <tbody id="data">
@@ -149,7 +156,7 @@
          $.ajax({
             type: 'GET',
             url: base_api + 'report/result',
-            //  url: './result.json',
+            //url: './result.json',
 
             data: getParam,
             dataType: 'json',
@@ -188,6 +195,8 @@
                   cogs_stock: total['cogs']['stock'],
                   cogs_pricing: total['cogs']['pricing'],
 
+                  transOut_stock: total['transOut']['stock'],
+                  transOut_pricing: total['transOut']['pricing'],
                }
                exlsJson.push(exportFinal);
 
@@ -205,8 +214,13 @@
                         <td class="text-end bgn-3 ">${currency(total['end']['stock'])}</td>
                         <td class="text-end bgn-3 ">${currency(total['end']['pricing'])}</td>
                         
+                        <td class="text-end">${currency(total['transOut']['stock'])}</td> 
+                        <td class="text-end">${currency(total['transOut']['pricing'])}</td> 
+
                         <td class="text-end">${currency(total['cogs']['stock'])}</td> 
                         <td class="text-end">${currency(total['cogs']['pricing'])}</td> 
+
+                     
                   <tr>  
                `);
             },
@@ -246,6 +260,9 @@
                cogs_stock: el['cogs']['stock'],
                cogs_pricing: el['cogs']['pricing'],
 
+               transOut_stock: el['transOut']['stock'],
+               transOut_pricing: el['transOut']['pricing'],
+               
             }
 
 
@@ -270,8 +287,14 @@
                            <td class="text-end bgn-3 ">${currency(el['end']['stock'])}</td>
                            <td class="text-end bgn-3 ">${currency(el['end']['pricing'])}</td>
                            
+                              <td class="text-end bgn-1">${currency(el['transOut']['stock'])}</td> 
+                           <td class="text-end bgn-1">${currency(el['transOut']['pricing'])}</td>  
+                           
+
                            <td class="text-end">${currency(el['cogs']['stock'])}</td> 
                            <td class="text-end">${currency(el['cogs']['pricing'])}</td>  
+
+                        
                         <tr> 
                      `);
 
@@ -318,8 +341,13 @@
                row.in.pricing + delimited +
                row.end.stock + delimited +
                row.end.pricing + delimited +
+
                row.cogs.stock + delimited +
-               row.cogs.pricing + '\n';
+               row.cogs.pricing + delimited +
+
+               row.transOut.stock + delimited +
+               row.transOut.pricing + 
+               '\n';
          });
          csv += '' + delimited +
             'TOTAL' + delimited +
@@ -340,8 +368,10 @@
             exportFinal.end_stock + delimited +
             exportFinal.end_pricing + delimited +
 
-            exportFinal.cogs_stock + delimited +
-            exportFinal.cogs_pricing + '\n';
+            exportFinal.transOut_stock + delimited +
+            exportFinal.transOut_pricing + 
+            
+            '\n';
          return csv;
       }
 

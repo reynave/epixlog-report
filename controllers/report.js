@@ -270,6 +270,41 @@ router.get('/result/', async (req, res) => {
       const endingStock = await runQuery(db, qEndingStock);
 
 
+      const transOutQuery =  `
+      select PackUnit, Material_ID, sum(t1.Qty_Used) as 'total' from (
+
+            select 
+            PackUnit, Material_ID, Qty_Used
+            from wastage_daily_consumption 
+            where 
+            year((CAST(Consumption_Date AS date))) =  ${year}  and 
+            month((CAST(Consumption_Date AS date))) =  ${month}
+
+         union all 
+
+            select 
+            PackUnit, Material_ID, Qty_Used
+            from Usage_Daily_Consumption 
+            where 
+            year((CAST(Consumption_Date AS date))) =  ${year} and 
+            month((CAST(Consumption_Date AS date))) =  ${month}
+
+         union all
+
+            select 
+            PackUnit, Material_ID, Qty_Used
+            from TransferOut_Daily_Consumption 
+            where 
+            year((CAST(Consumption_Date AS date))) =  ${year} and 
+            month((CAST(Consumption_Date AS date))) =  ${month}
+
+         ) as t1
+      group by PackUnit, Material_ID;
+      `;
+      const transOut = await runQuery(db, transOutQuery);
+
+
+
       for (let i = 0; i < endingStock.length; i++) {
          const row = endingStock[i];
          const filteredItem = unitPrice.filter(item =>
@@ -294,6 +329,10 @@ router.get('/result/', async (req, res) => {
             pricing: 0,
          },
          cogs: {
+            stock: 0,
+            pricing: 0,
+         }, 
+         transOut: {
             stock: 0,
             pricing: 0,
          },
@@ -330,9 +369,22 @@ router.get('/result/', async (req, res) => {
             pricing: filteredItem3.length > 0 ? filteredItem3[0].priceBegin : 0
          }
 
+         
+
+
+         const filteredItem4 = transOut.filter(item =>
+            item.Material_ID === row['Material_ID'] && item.PackUnit === row['PackUnit']
+         );
+
+         let var_transOut  = {
+            stock: filteredItem4.length > 0 ? filteredItem4[0].total : 0,
+            pricing: filteredItem4.length > 0 ? row['UnitPrice'] * filteredItem4[0].total  : 0
+         }
+
+         //cogs = begin + in - out - end
          let var_cogs = {
-            stock: var_begin.stock + var_in.stock - var_end.stock,
-            pricing: var_begin.pricing + var_in.pricing - var_end.pricing,
+            stock: var_begin.stock + var_in.stock - var_transOut.stock - var_end.stock,
+            pricing: var_begin.pricing + var_in.pricing - var_transOut.pricing - var_end.pricing,
          }
 
          const newData = {
@@ -353,6 +405,7 @@ router.get('/result/', async (req, res) => {
             in: var_in,
             end: var_end,
             cogs: var_cogs,
+            transOut :var_transOut,
          };
        
 
@@ -370,6 +423,11 @@ router.get('/result/', async (req, res) => {
 
             total.cogs.stock += var_cogs.stock;
             total.cogs.pricing += var_cogs.pricing;
+
+            total.transOut.stock += var_transOut.stock;
+            total.transOut.pricing += var_transOut.pricing;
+
+            
          }
       }
 
