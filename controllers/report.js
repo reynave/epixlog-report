@@ -2,16 +2,18 @@ require('dotenv').config();
 const express = require('express');
 const router = express.Router();
 const sql = require('msnodesqlv8');
+const { mergeAndSumArrays } = require('./../model/globalFunc');
 //const connectionString = "Driver={" + process.env.SQL_DRIVE + "};Server=" + process.env.SQL_SERVER + ";Database=" + process.env.SQL_DATABASE + ";Trusted_Connection=yes;";
 const dbName = process.env.SQL_DATABASE;
 const prefix = 'dbo.';
 
+
 // Fungsi untuk menjalankan query dengan promise
 const runQuery = (dbName, query) => {
    return new Promise((resolve, reject) => {
-      //const connectionString = "Driver={" + process.env.SQL_DRIVE + "};Server=" + process.env.SQL_SERVER + ";Database=" + dbName + ";Trusted_Connection=yes;";
+      const LOCALHOST = "Driver={" + process.env.SQL_DRIVE + "};Server=" + process.env.SQL_SERVER + ";Database=" + dbName + ";Trusted_Connection=yes;";
       //const connectionString = `Driver={ODBC Driver 17 for SQL Server};Server=epixbiz.marche.co.id,1435\\SERVER21;Database=EpixLOG_Mokka_Pluit;UID=sa;PWD=SQLserver123;"`;
-      const connectionString = `
+      const LIVE = `
          Driver={${process.env.SQL_DRIVE}};
          Server=${process.env.SQL_SERVER};
          Database=${dbName};
@@ -21,7 +23,7 @@ const runQuery = (dbName, query) => {
          Encrypt=${process.env.SQL_ENCRYPT};
        `;
 
-      sql.query(connectionString, query, (err, rows) => {
+      sql.query(LIVE, query, (err, rows) => {
          if (err) {
             reject(err);
          } else {
@@ -33,13 +35,13 @@ const runQuery = (dbName, query) => {
 
 
 router.get('/test', async (req, res) => {
-   console.log("test opk");
+   console.log("test opk"); 
    try {
       const test = await runQuery('EpiqureIMS_Global', "select CURRENT_TIMESTAMP as 'success' ");
       res.json({
          error: false,
          connection: test,
-         get: req.query,
+         get: req.query, 
       });
    } catch (err) {
       console.error('Error: ', err);
@@ -52,10 +54,13 @@ router.get('/test', async (req, res) => {
       Encrypt=${process.env.SQL_ENCRYPT};
     `;
 
+   
+
       res.json({
          error: true,
          connectionString: connectionString,
-         message: err
+         message: err,
+        
       });
    }
 });
@@ -118,17 +123,7 @@ router.get('/result/', async (req, res) => {
        ) AS i
        WHERE i.RowNum = 1
        `;
-
-       const qVer0 = `SELECT i.Material_ID, i.PackUnit, i.Qty_In, i.DateCreated,   i.RowNum, i.Document_Type
-       FROM (
-           SELECT *,
-               ROW_NUMBER() OVER (PARTITION BY Material_ID, PackUnit ORDER BY DateCreated DESC) AS RowNum
-           FROM Inventory
-           WHERE Document_Type != 'StokeTake'
-       ) AS i
-       WHERE i.RowNum = 1
-       AND (CAST(DateCreated AS date) <= GETDATE())
-       `;
+ 
 
       // Jalankan query pertama
       const Inventory = await runQuery(db, q);
@@ -149,21 +144,7 @@ router.get('/result/', async (req, res) => {
             WHERE s.Material_ID = '${row.Material_ID}' AND s.PackUnit = '${row.PackUnit}' 
             and m.Material_Type = 0 and m.Material_Status = 0 and m.StockTake = 1   and  s.Document_Date <= Convert(datetime, '${maxDate}' )
             ORDER BY s.Document_Date DESC;
-         `;
-
-         const q2Ver0 = ` 
-           SELECT top 1 
-               s.Material_ID,  m.Material_Desc1, m.Material_Desc2, u.UOM_Desc1, s.BaseUnit, b.UOM_Desc1 as 'BaseUnitDesc', 
-               s.PackUnit, s.Material_UnitCost as 'UnitPrice',
-               s.DateCreated, '${row.Document_Type}' as 'Document_Type', 1 as 'Convertion'
-            FROM Inventory as s
-            left join Material as m on m.Material_ID = s.Material_ID 
-            join UOM as u on u.UOM_ID = s.PackUnit
-            join uom as b on b.UOM_ID = s.BaseUnit
-            WHERE s.Material_ID = '${row.Material_ID}' AND s.PackUnit = '${row.PackUnit}' 
-            and m.Material_Type = 0 and m.Material_Status = 0 and m.StockTake = 1
-            ORDER BY s.DateCreated DESC;
-         `;
+         `; 
          const supplierRows = await runQuery(db, q2);
 
 
@@ -270,38 +251,83 @@ router.get('/result/', async (req, res) => {
       const endingStock = await runQuery(db, qEndingStock);
 
 
-      const transOutQuery =  `
-      select PackUnit, Material_ID, sum(t1.Qty_Used) as 'total' from (
+      // const transOutQuery =  `
+      // select PackUnit, Material_ID, sum(t1.Qty_Used) as 'total' from (
 
-            select 
-            PackUnit, Material_ID, Qty_Used
-            from wastage_daily_consumption 
-            where 
-            year((CAST(Consumption_Date AS date))) =  ${year}  and 
-            month((CAST(Consumption_Date AS date))) =  ${month}
+      //       select 
+      //       PackUnit, Material_ID, Qty_Used
+      //       from wastage_daily_consumption 
+      //       where 
+      //       year((CAST(Consumption_Date AS date))) =  ${year}  and 
+      //       month((CAST(Consumption_Date AS date))) =  ${month}
 
-         union all 
+      //    union all 
 
-            select 
-            PackUnit, Material_ID, Qty_Used
-            from Usage_Daily_Consumption 
-            where 
-            year((CAST(Consumption_Date AS date))) =  ${year} and 
-            month((CAST(Consumption_Date AS date))) =  ${month}
+      //       select 
+      //       PackUnit, Material_ID, Qty_Used
+      //       from Usage_Daily_Consumption 
+      //       where 
+      //       year((CAST(Consumption_Date AS date))) =  ${year} and 
+      //       month((CAST(Consumption_Date AS date))) =  ${month}
 
-         union all
+      //    union all
 
-            select 
-            PackUnit, Material_ID, Qty_Used
-            from TransferOut_Daily_Consumption 
-            where 
-            year((CAST(Consumption_Date AS date))) =  ${year} and 
-            month((CAST(Consumption_Date AS date))) =  ${month}
+      //       select 
+      //       PackUnit, Material_ID, Qty_Used
+      //       from TransferOut_Daily_Consumption 
+      //       where 
+      //       year((CAST(Consumption_Date AS date))) =  ${year} and 
+      //       month((CAST(Consumption_Date AS date))) =  ${month}
 
-         ) as t1
-      group by PackUnit, Material_ID;
-      `;
-      const transOut = await runQuery(db, transOutQuery);
+      //    ) as t1
+      // group by PackUnit, Material_ID;
+      // `;
+      // const transOut = await runQuery(db, transOutQuery);
+
+
+
+
+
+      /**
+      *   TRANSFER OUT , TOTAL
+      */
+      const dailyConsumption = [];
+      const tables = ['Usage_Daily_Consumption', 'Wastage_Daily_Consumption','TransferOut_Daily_Consumption','Spoilage_Daily_Consumption'];
+      // const tables = ['Usage_Daily_Consumption'];
+      for (const table of tables) {
+         const result = await runQuery( db,
+            `
+               WITH RankedData AS (
+                  SELECT 
+                        Material_ID, PackUnit, Convertion, DateCreated,
+                     ROW_NUMBER() OVER (PARTITION BY Material_ID, PackUnit ORDER BY DateCreated DESC) AS row_num
+                  FROM StockTake_Details
+                  where year((CAST(DateCreated AS date))) =  ${year} 
+                  and month((CAST(DateCreated AS date))) = ${month}
+               ) 
+               select 
+               u.PackUnit, u.Material_ID, t1.Convertion, (u.Qty_Used / t1.Convertion) as 'total'
+               from ${table} as u
+               left join (
+                  SELECT 
+                     row_num, Material_ID, PackUnit, Convertion, DateCreated
+                  FROM RankedData
+                  WHERE row_num = 1 
+               ) as t1 on t1.Material_ID = u.Material_ID AND t1.PackUnit =   u.PackUnit 
+               where 
+               year((CAST(u.Consumption_Date AS date))) =  ${year}
+               and month((CAST(u.Consumption_Date AS date))) = ${month}
+               order by u.Material_ID asc
+               ;
+               `
+          ); 
+         dailyConsumption.push(result);
+      }
+      const transOut = mergeAndSumArrays(dailyConsumption);
+
+
+      /**  END TRANSFER OUT  */  
+
 
 
 
@@ -353,7 +379,6 @@ router.get('/result/', async (req, res) => {
             item.Material_ID === row['Material_ID'] && item.PackUnit === row['PackUnit']
          );
 
-
          let valBeginningStock = filteredItem.length > 0 ? filteredItem[0].priceBegin : 0;
 
          let var_begin = {
@@ -371,7 +396,7 @@ router.get('/result/', async (req, res) => {
 
          
 
-
+         //TRANSFER OUT = qty * unitPrice 
          const filteredItem4 = transOut.filter(item =>
             item.Material_ID === row['Material_ID'] && item.PackUnit === row['PackUnit']
          );
@@ -380,6 +405,16 @@ router.get('/result/', async (req, res) => {
             stock: filteredItem4.length > 0 ? filteredItem4[0].total : 0,
             pricing: filteredItem4.length > 0 ? row['UnitPrice'] * filteredItem4[0].total  : 0
          }
+
+
+
+
+        
+
+
+
+
+
 
          //cogs = begin + in - out - end
          let var_cogs = {
@@ -439,8 +474,8 @@ router.get('/result/', async (req, res) => {
          // beginningStock: beginningStock, 
          // inStock: inStock, 
           endingStock :endingStock,
-         // endingStock: endingStock,
-        
+          transOut : transOut,
+          
          finalData: finalData,
          total: total,
       });
@@ -453,5 +488,7 @@ router.get('/result/', async (req, res) => {
       });
    }
 });
+
+
 
 module.exports = router;
