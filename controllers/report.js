@@ -35,13 +35,13 @@ const runQuery = (dbName, query) => {
 
 
 router.get('/test', async (req, res) => {
-   console.log("test opk"); 
+   console.log("test opk");
    try {
       const test = await runQuery('EpiqureIMS_Global', "select CURRENT_TIMESTAMP as 'success' ");
       res.json({
          error: false,
          connection: test,
-         get: req.query, 
+         get: req.query,
       });
    } catch (err) {
       console.error('Error: ', err);
@@ -54,13 +54,13 @@ router.get('/test', async (req, res) => {
       Encrypt=${process.env.SQL_ENCRYPT};
     `;
 
-   
+
 
       res.json({
          error: true,
          connectionString: connectionString,
          message: err,
-        
+
       });
    }
 });
@@ -99,10 +99,10 @@ router.get('/result/', async (req, res) => {
       let db = req.query['db'];
 
       var d = new Date(year, month, 0);
-      var maxDate = year+'-'+month+'-'+d.getDate().toString();
+      var maxDate = year + '-' + month + '-' + d.getDate().toString();
       //var maxDate = '2024-11-30';
 
-      console.log('maxDate',maxDate);
+      console.log('maxDate', maxDate);
       let StockTake_Month = month - 1 == 0 ? 12 : month - 1;
       let StockTake_Year = StockTake_Month == 12 && month == 1 ? year - 1 : year;
 
@@ -123,7 +123,7 @@ router.get('/result/', async (req, res) => {
        ) AS i
        WHERE i.RowNum = 1
        `;
- 
+
 
       // Jalankan query pertama
       const Inventory = await runQuery(db, q);
@@ -144,14 +144,14 @@ router.get('/result/', async (req, res) => {
             WHERE s.Material_ID = '${row.Material_ID}' AND s.PackUnit = '${row.PackUnit}' 
             and m.Material_Type = 0 and m.Material_Status = 0 and m.StockTake = 1   and  s.Document_Date <= Convert(datetime, '${maxDate}' )
             ORDER BY s.Document_Date DESC;
-         `; 
+         `;
          const supplierRows = await runQuery(db, q2);
 
 
          const supplier = supplierRows[0] || {};
 
          const newData = {
-          //  q :  q2,
+            //  q :  q2,
             Material_ID: row['Material_ID'],
             Material_Desc1: supplier['Material_Desc1'] || null,
             Document_Type: row['Document_Type'],
@@ -161,7 +161,7 @@ router.get('/result/', async (req, res) => {
             BaseUnitDesc: supplier['BaseUnitDesc'],
             Qty_In: row['Qty_In'],
             DateCreated: row['DateCreated'],
-            Document_Date: supplier['Document_Date'], 
+            Document_Date: supplier['Document_Date'],
             Convertion: supplier['Convertion'] || 1, // default to 1 if undefined
             Price: supplier['UnitPrice'] || 0,   // default to 0 if undefined
             UnitPrice: supplier['UnitPrice'] || 0,
@@ -251,38 +251,7 @@ router.get('/result/', async (req, res) => {
       const endingStock = await runQuery(db, qEndingStock);
 
 
-      // const transOutQuery =  `
-      // select PackUnit, Material_ID, sum(t1.Qty_Used) as 'total' from (
-
-      //       select 
-      //       PackUnit, Material_ID, Qty_Used
-      //       from wastage_daily_consumption 
-      //       where 
-      //       year((CAST(Consumption_Date AS date))) =  ${year}  and 
-      //       month((CAST(Consumption_Date AS date))) =  ${month}
-
-      //    union all 
-
-      //       select 
-      //       PackUnit, Material_ID, Qty_Used
-      //       from Usage_Daily_Consumption 
-      //       where 
-      //       year((CAST(Consumption_Date AS date))) =  ${year} and 
-      //       month((CAST(Consumption_Date AS date))) =  ${month}
-
-      //    union all
-
-      //       select 
-      //       PackUnit, Material_ID, Qty_Used
-      //       from TransferOut_Daily_Consumption 
-      //       where 
-      //       year((CAST(Consumption_Date AS date))) =  ${year} and 
-      //       month((CAST(Consumption_Date AS date))) =  ${month}
-
-      //    ) as t1
-      // group by PackUnit, Material_ID;
-      // `;
-      // const transOut = await runQuery(db, transOutQuery);
+      
 
 
 
@@ -291,42 +260,83 @@ router.get('/result/', async (req, res) => {
       /**
       *   TRANSFER OUT , TOTAL
       */
-      const dailyConsumption = [];
-      const tables = ['Usage_Daily_Consumption', 'Wastage_Daily_Consumption','TransferOut_Daily_Consumption','Spoilage_Daily_Consumption'];
-      // const tables = ['Usage_Daily_Consumption'];
-      for (const table of tables) {
-         const result = await runQuery( db,
-            `
-               WITH RankedData AS (
-                  SELECT 
-                        Material_ID, PackUnit, Convertion, DateCreated,
-                     ROW_NUMBER() OVER (PARTITION BY Material_ID, PackUnit ORDER BY DateCreated DESC) AS row_num
-                  FROM StockTake_Details
-                  where year((CAST(DateCreated AS date))) =  ${year} 
-                  and month((CAST(DateCreated AS date))) = ${month}
-               ) 
+      // const dailyConsumption = [];
+      // const tables = ['Usage_Daily_Consumption', 'Wastage_Daily_Consumption', 'TransferOut_Daily_Consumption', 'Spoilage_Daily_Consumption'];
+      // // const tables = ['Usage_Daily_Consumption'];
+      // for (const table of tables) {
+      //    const result = await runQuery(db,
+      //       `
+      //          WITH RankedData AS (
+      //             SELECT 
+      //                   Material_ID, PackUnit, Convertion, DateCreated,
+      //                ROW_NUMBER() OVER (PARTITION BY Material_ID, PackUnit ORDER BY DateCreated DESC) AS row_num
+      //             FROM StockTake_Details
+      //             where year((CAST(DateCreated AS date))) =  ${year} 
+      //             and month((CAST(DateCreated AS date))) = ${month}
+      //          ) 
+      //          select 
+      //          u.PackUnit, u.Material_ID, t1.Convertion, (u.Qty_Used / t1.Convertion) as 'total'
+      //          from ${table} as u
+      //          left join (
+      //             SELECT 
+      //                row_num, Material_ID, PackUnit, Convertion, DateCreated
+      //             FROM RankedData
+      //             WHERE row_num = 1 
+      //          ) as t1 on t1.Material_ID = u.Material_ID AND t1.PackUnit =   u.PackUnit 
+      //          where 
+      //          year((CAST(u.Consumption_Date AS date))) =  ${year}
+      //          and month((CAST(u.Consumption_Date AS date))) = ${month}
+      //          order by u.Material_ID asc
+      //          ;
+      //          `
+      //    );
+      //    dailyConsumption.push(result);
+      // } 
+      // const transOut = mergeAndSumArrays(dailyConsumption);
+
+
+      const transOutQuery = `
+      select PackUnit, Material_ID, sum(t1.Qty) as 'total',  sum(t1.price) as 'price' from (
+
                select 
-               u.PackUnit, u.Material_ID, t1.Convertion, (u.Qty_Used / t1.Convertion) as 'total'
-               from ${table} as u
-               left join (
-                  SELECT 
-                     row_num, Material_ID, PackUnit, Convertion, DateCreated
-                  FROM RankedData
-                  WHERE row_num = 1 
-               ) as t1 on t1.Material_ID = u.Material_ID AND t1.PackUnit =   u.PackUnit 
-               where 
-               year((CAST(u.Consumption_Date AS date))) =  ${year}
-               and month((CAST(u.Consumption_Date AS date))) = ${month}
-               order by u.Material_ID asc
-               ;
-               `
-          ); 
-         dailyConsumption.push(result);
-      }
-      const transOut = mergeAndSumArrays(dailyConsumption);
+            Material_ID, PackUnit,   Qty / Convertion as 'Qty' ,  ((Cost  * Qty) / Convertion  ) as 'price'
+            from Wastege_Details_Spoilage 
+            where 
+            year((CAST(DateCreated AS date))) =  ${year}  and 
+            month((CAST(DateCreated AS date))) =  ${month}
+
+            union all 
+
+               select 
+            Material_ID, PackUnit,   Qty / Convertion as 'Qty',  ((Cost  * Qty) / Convertion  )as 'price'
+            from Wastage_Details_Materials 
+            where 
+            year((CAST(DateCreated AS date))) =  ${year}  and 
+            month((CAST(DateCreated AS date))) =  ${month}
+
+            union all
+
+               select 
+            Material_ID, PackUnit,   Qty / Convertion as 'Qty' ,  ((Cost  * Qty) / Convertion  ) as 'price'
+            from Usage_Details 
+            where 
+            year((CAST(DateCreated AS date))) =  ${year}  and 
+            month((CAST(DateCreated AS date))) =  ${month}
+            union all
+
+            select 
+            Material_ID, PackUnit,   Qty / Convertion as 'Qty' , ((Cost  * Qty) / Convertion  ) as 'price'
+            from Transfer_To_Outlet_Details 
+            where 
+            year((CAST(DateCreated AS date))) =  ${year}  and 
+            month((CAST(DateCreated AS date))) =  ${month}
+            ) as t1
+       group by PackUnit, Material_ID; 
+        `;
+      const transOut = await runQuery(db, transOutQuery);
 
 
-      /**  END TRANSFER OUT  */  
+      /**  END TRANSFER OUT  */
 
 
 
@@ -357,7 +367,7 @@ router.get('/result/', async (req, res) => {
          cogs: {
             stock: 0,
             pricing: 0,
-         }, 
+         },
          transOut: {
             stock: 0,
             pricing: 0,
@@ -394,22 +404,24 @@ router.get('/result/', async (req, res) => {
             pricing: filteredItem3.length > 0 ? filteredItem3[0].priceBegin : 0
          }
 
-         
+
 
          //TRANSFER OUT = qty * unitPrice 
          const filteredItem4 = transOut.filter(item =>
             item.Material_ID === row['Material_ID'] && item.PackUnit === row['PackUnit']
          );
 
-         let var_transOut  = {
+         let var_transOut = {
             stock: filteredItem4.length > 0 ? filteredItem4[0].total : 0,
-            pricing: filteredItem4.length > 0 ? row['UnitPrice'] * filteredItem4[0].total  : 0
+            //pricing: filteredItem4.length > 0 ? row['UnitPrice'] * filteredItem4[0].total : 0
+            pricing: filteredItem4.length > 0 ? filteredItem4[0].price : 0
+            
          }
 
 
 
 
-        
+
 
 
 
@@ -440,13 +452,13 @@ router.get('/result/', async (req, res) => {
             in: var_in,
             end: var_end,
             cogs: var_cogs,
-            transOut :var_transOut,
+            transOut: var_transOut,
          };
-       
 
-         if (newData['BaseUnitDesc'] != '-1') { 
+
+         if (newData['BaseUnitDesc'] != '-1') {
             finalData.push(newData);
-            
+
             total.begin.stock += var_begin.stock;
             total.begin.pricing += var_begin.pricing;
 
@@ -462,7 +474,7 @@ router.get('/result/', async (req, res) => {
             total.transOut.stock += var_transOut.stock;
             total.transOut.pricing += var_transOut.pricing;
 
-            
+
          }
       }
 
@@ -473,9 +485,9 @@ router.get('/result/', async (req, res) => {
          unitPrice: unitPrice,
          // beginningStock: beginningStock, 
          // inStock: inStock, 
-          endingStock :endingStock,
-          transOut : transOut,
-          
+         endingStock: endingStock,
+         transOut: transOut,
+
          finalData: finalData,
          total: total,
       });
