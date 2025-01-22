@@ -298,38 +298,46 @@ router.get('/result/', async (req, res) => {
       const transOutQuery = `
       select PackUnit, Material_ID, sum(t1.Qty) as 'total',  sum(t1.price) as 'price' from (
 
-               select 
-            Material_ID, PackUnit,   Qty / Convertion as 'Qty' ,  ((Cost  * Qty) / Convertion  ) as 'price'
-            from Wastege_Details_Spoilage 
+            select w.Tranx_ID, w.WastageDate,
+            Material_ID, PackUnit,   Qty / Convertion as 'Qty' , ((Cost  * Qty) / Convertion  ) as 'price'
+            from Wastege_Details_Spoilage as d
+            left join Wastage as w on w.Tranx_ID = d.Tranx_ID
             where 
-            year((CAST(DateCreated AS date))) =  ${year}  and 
-            month((CAST(DateCreated AS date))) =  ${month}
+            year((CAST(w.WastageDate AS date))) = ${year} and 
+            month((CAST(w.WastageDate AS date))) = ${month}
 
             union all 
 
-               select 
-            Material_ID, PackUnit,   Qty / Convertion as 'Qty',  ((Cost  * Qty) / Convertion  )as 'price'
-            from Wastage_Details_Materials 
-            where 
-            year((CAST(DateCreated AS date))) =  ${year}  and 
-            month((CAST(DateCreated AS date))) =  ${month}
-
-            union all
-
-               select 
-            Material_ID, PackUnit,   Qty / Convertion as 'Qty' ,  ((Cost  * Qty) / Convertion  ) as 'price'
-            from Usage_Details 
-            where 
-            year((CAST(DateCreated AS date))) =  ${year}  and 
-            month((CAST(DateCreated AS date))) =  ${month}
-            union all
-
-            select 
+              select w.Tranx_ID, w.WastageDate,
             Material_ID, PackUnit,   Qty / Convertion as 'Qty' , ((Cost  * Qty) / Convertion  ) as 'price'
-            from Transfer_To_Outlet_Details 
+            from Wastage_Details_Materials as d
+            left join Wastage as w on w.Tranx_ID = d.Tranx_ID
             where 
-            year((CAST(DateCreated AS date))) =  ${year}  and 
-            month((CAST(DateCreated AS date))) =  ${month}
+            year((CAST(w.WastageDate AS date))) = ${year} and 
+            month((CAST(w.WastageDate AS date))) = ${month}
+
+            union all
+
+            select w.Tranx_ID, w.UsageDate,
+            Material_ID, PackUnit,   Qty / Convertion as 'Qty' , ((Cost  * Qty) / Convertion  ) as 'price'
+            from Usage_Details as d
+            left join Usage as w on w.Tranx_ID = d.Tranx_ID
+            where 
+            year((CAST(w.UsageDate AS date))) = ${year} and 
+            month((CAST(w.UsageDate AS date))) =  ${month}
+
+
+            union all
+
+            select w.Tranx_ID,  w.TransferDate,
+            Material_ID, PackUnit,   Qty / Convertion as 'Qty' , ((Cost  * Qty) / Convertion  ) as 'price'
+            from Transfer_To_Outlet_Details as d
+            left join Transfer_To_Outlet as w on w.Tranx_ID = d.Tranx_ID
+            where 
+            year((CAST(w.TransferDate AS date))) = ${year} and 
+            month((CAST(w.TransferDate AS date))) =  ${month}
+
+
             ) as t1
        group by PackUnit, Material_ID; 
         `;
